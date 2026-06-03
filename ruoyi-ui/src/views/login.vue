@@ -162,32 +162,28 @@ export default {
   justify-content: center;
   align-items: center;
   height: 100%;
-  background-image: url("../assets/images/login-background.jpg");
+  /* 充满活力的科技紫/蓝渐变背景，替代原来的静态图 */
+  background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: cover;
 }
 .title {
   margin: 0px auto 30px auto;
   text-align: center;
-  color: #707070;
+  color: #2c3e50;
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 2px;
 }
 
 .login-form {
-  border-radius: 6px;
-  background: #ffffff;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85); /* 半透明白色背景 */
+  backdrop-filter: blur(12px); /* 核心：毛玻璃模糊效果 */
+  -webkit-backdrop-filter: blur(12px);
   width: 400px;
-  padding: 25px 25px 5px 25px;
-  z-index: 1;
-  .el-input {
-    height: 38px;
-    input {
-      height: 38px;
-    }
-  }
-  .input-icon {
-    height: 39px;
-    width: 14px;
-    margin-left: 2px;
-  }
+  padding: 35px 35px 25px 35px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* 悬浮阴影 */
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .login-tip {
   font-size: 13px;
@@ -217,5 +213,14 @@ export default {
 }
 .login-code-img {
   height: 38px;
+}
+.el-button--primary {
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+  border: none !important;
+  transition: all 0.3s ease;
+}
+.el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(118, 75, 162, 0.4);
 }
 </style>

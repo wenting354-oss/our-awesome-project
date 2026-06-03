@@ -1,128 +1,82 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="帖子标题" prop="title">
-        <el-input
-          v-model="queryParams.title"
-          placeholder="请输入帖子标题"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="标签" prop="tags">
-        <el-input
-          v-model="queryParams.tags"
-          placeholder="请输入标签"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option
-            v-for="dict in statusOptions"
-            :key="dict.dictValue"
-            :label="dict.dictLabel"
-            :value="dict.dictValue"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+    <h1 style="color: red; font-size: 60px; text-align: center; z-index: 9999; position: relative;">
+      🔥🔥 正在修改此文件 🔥🔥
+    </h1>
+    <el-row type="flex" justify="center">
+      <el-col :xs="24" :sm="20" :md="16" :lg="12">
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['campus:topic:add']"
-        >新增</el-button>
+        <el-card class="publish-card" shadow="hover">
+          <div class="publish-header">
+            <h3>✨ 有什么新鲜事想告诉大家？</h3>
+          </div>
+          <el-input
+            type="textarea"
+            :rows="3"
+            placeholder="分享校园生活、吐槽、求助..."
+            v-model="queryParams.content"
+            style="margin-bottom: 15px;"
+          ></el-input>
+          <div class="publish-actions">
+            <el-button type="primary" icon="el-icon-position" round @click="handleAdd">发布动态</el-button>
+            <el-button icon="el-icon-search" round @click="handleQuery">搜索</el-button>
+          </div>
+        </el-card>
+
+        <div class="feed-list" v-loading="loading">
+          <el-empty v-if="topicList.length === 0" description="暂无校园动态，快来发第一条吧！"></el-empty>
+
+          <el-card class="topic-card" shadow="hover" v-for="(item, index) in topicList" :key="index">
+            <div class="topic-header">
+              <el-avatar :size="45" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"></el-avatar>
+              <div class="user-info">
+                <span class="user-name">{{ item.createBy || '匿名校友' }}</span>
+                <span class="publish-time">{{ parseTime(item.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+              </div>
+              <div class="right-actions">
+                <el-dropdown trigger="click">
+                  <span class="el-dropdown-link"><i class="el-icon-more el-icon--right"></i></span>
+                  <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item icon="el-icon-edit" @click.native="handleUpdate(item)">编辑</el-dropdown-item>
+                    <el-dropdown-item icon="el-icon-delete" @click.native="handleDelete(item)" style="color: #F56C6C;">删除</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+              </div>
+            </div>
+
+            <div class="topic-content">
+              {{ item.content }}
+            </div>
+
+            <div class="topic-media" v-if="index % 2 === 0">
+              <div class="mock-image"></div>
+            </div>
+
+            <div class="topic-footer">
+              <div class="action-btn">
+                <i class="el-icon-thumb"></i> <span>点赞 ({{ Math.floor(Math.random() * 50) + 1 }})</span>
+              </div>
+              <div class="action-btn">
+                <i class="el-icon-chat-dot-square"></i> <span>评论 ({{ Math.floor(Math.random() * 20) }})</span>
+              </div>
+              <div class="action-btn">
+                <i class="el-icon-share"></i> <span>分享</span>
+              </div>
+            </div>
+          </el-card>
+        </div>
+
+        <pagination
+          v-show="total>0"
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+          class="custom-pagination"
+        />
+
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['campus:topic:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['campus:topic:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['campus:topic:export']"
-        >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-
-    <el-table v-loading="loading" :data="topicList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="帖子ID" align="center" prop="topicId" />
-      <el-table-column label="帖子标题" align="center" prop="title" />
-      <el-table-column label="帖子内容" align="center" prop="content" show-overflow-tooltip />
-      <el-table-column label="发布人" align="center" prop="nickName" />
-      <el-table-column label="标签" align="center" prop="tags" />
-      <el-table-column label="状态" align="center" prop="status">
-        <template slot-scope="scope">
-          <span>{{ formatStatus(scope.row.status) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['campus:topic:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['campus:topic:remove']"
-          >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
 
     <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
@@ -321,3 +275,117 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+.campus-circle-container {
+  padding: 20px;
+  background-color: #f4f6f9; /* 模仿微信朋友圈的浅灰背景 */
+  min-height: calc(100vh - 84px);
+}
+
+.publish-card {
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: none;
+  .publish-header h3 {
+    margin-top: 0;
+    color: #303133;
+    font-weight: 600;
+  }
+  .publish-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.topic-card {
+  border-radius: 12px;
+  margin-bottom: 15px;
+  border: none;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08) !important;
+  }
+
+  .topic-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+
+    .user-info {
+      margin-left: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+
+      .user-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2F54EB; /* 高级社交蓝 */
+      }
+      .publish-time {
+        font-size: 12px;
+        color: #909399;
+        margin-top: 4px;
+      }
+    }
+
+    .el-dropdown-link {
+      cursor: pointer;
+      color: #909399;
+      font-size: 18px;
+    }
+  }
+
+  .topic-content {
+    font-size: 15px;
+    color: #303133;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    white-space: pre-wrap;
+  }
+
+  .topic-media {
+    margin-bottom: 15px;
+    .mock-image {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      border-radius: 8px;
+    }
+  }
+
+  .topic-footer {
+    display: flex;
+    border-top: 1px solid #ebeef5;
+    padding-top: 12px;
+
+    .action-btn {
+      flex: 1;
+      text-align: center;
+      color: #606266;
+      font-size: 14px;
+      cursor: pointer;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #2F54EB;
+      }
+
+      i {
+        font-size: 16px;
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+.custom-pagination {
+  text-align: center;
+  margin-top: 20px;
+  background: transparent !important;
+}
+</style>
