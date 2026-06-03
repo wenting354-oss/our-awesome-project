@@ -28,6 +28,13 @@ module.exports = {
           ['^' + process.env.VUE_APP_BASE_API]: ''
         }
       },
+      '/dify-api': {
+        target: 'http://localhost/v1', // 这里的地址是 Dify 的官方 API 地址
+        changeOrigin: true,
+        pathRewrite: {
+          '^/dify-api': ''
+        }
+      },
       '/profile': {
         target: 'http://localhost:8080',
         changeOrigin: true
