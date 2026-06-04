@@ -100,6 +100,7 @@ export const constantRoutes = [
 ]
 
 // 动态路由，基于用户权限动态去加载
+// 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
     path: '/system/user-auth',
@@ -171,91 +172,62 @@ export const dynamicRoutes = [
       }
     ]
   },
-  // --- 【新增“跑腿代办”的路由】 ---
+
+  // ==================== 【你的校园模块内页路由】 ====================
+  // 注意：此处绝对不能包含任何在后台系统“菜单管理”中配置的主菜单路由(index)！
+
   {
-    path: '/errand',
+    path: '/market-page',
     component: Layout,
+    hidden: true, // 必须设置隐藏，不在侧边栏显示
+    permissions: ['campus:market:list'],
     children: [
-      {
-        path: 'index',
-        component: () => import('@/views/campus/errand/index'),
-        name: 'Errand',
-        meta: { title: '跑腿大厅', icon: 'el-icon-s-promotion' }
-      }
-    ]
-  },
-  {
-    path: '/market',
-    component: Layout,
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/campus/market/index'),
-        name: 'Market',
-        meta: { title: '二手商城', icon: 'el-icon-shopping-bag-1' }
-      },
+      // 里面仅保留详情、新增、修改等隐藏页面
       {
         path: 'detail',
         component: () => import('@/views/campus/market/detail'),
         name: 'MarketDetail',
-        meta: { title: '商品详情', activeMenu: '/market/index' }
+        // 注意这里的 activeMenu，应该填写你在后台菜单管理里配置的 二手商城 路由地址（带上父级路径）
+        // 比如如果父级目录路径是 campus，二手商城路径是 market，这里就填 /campus/market
+        meta: { title: '商品详情', activeMenu: '/market' }
       },
       {
         path: 'add',
         component: () => import('@/views/campus/market/add'),
         name: 'AddProduct',
-        meta: { title: '发布商品', activeMenu: '/market/index' }
+        meta: { title: '发布商品', activeMenu: '/market' }
       },
       {
         path: 'edit',
         component: () => import('@/views/campus/market/edit'),
         name: 'EditProduct',
-        meta: { title: '编辑商品', activeMenu: '/market/index' }
+        meta: { title: '编辑商品', activeMenu: '/market' }
       },
       {
         path: 'my-products',
         component: () => import('@/views/campus/market/my-products'),
         name: 'MyProducts',
-        meta: { title: '我的商品', activeMenu: '/market/index' }
+        meta: { title: '我的商品', activeMenu: '/market' }
       }
     ]
   },
   {
-    path: '/order',
+    path: '/order-page',
     component: Layout,
+    hidden: true, // 必须设置隐藏
+    permissions: ['campus:order:list'],
     children: [
-      {
-        path: 'index',
-        component: () => import('@/views/campus/order/index'),
-        name: 'Order',
-        meta: { title: '我的订单', icon: 'el-icon-document-copy' }
-      },
+      // 里面仅保留详情页
       {
         path: 'detail',
         component: () => import('@/views/campus/order/detail'),
         name: 'OrderDetail',
-        meta: { title: '订单详情', activeMenu: '/order/index' }
-      }
-    ]
-  },
-
-  // --- 【新增结束】 ---
-
-  // --- 【“智能助手”路由已移到此处】 ---
-  {
-    path: '/assistant',
-    component: Layout,
-    // hidden: false, // 在 dynamicRoutes 中通常不需要 hidden: false，显示/隐藏由后端菜单控制
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/assistant'),
-        name: 'IntelligentAssistant',
-        meta: { title: '智能助手', icon: 'message' } // 使用已有的icon，例如 'message'
+        meta: { title: '订单详情', activeMenu: '/order' }
       }
     ]
   }
-  // --- 【新增结束】 ---
+
+  // --- 【完全删除 errand 和 assistant，因为它们没有需要隐藏的前端内页】 ---
 ]
 
 // 防止连续点击多次路由报错

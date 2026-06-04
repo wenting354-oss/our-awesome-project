@@ -43,18 +43,7 @@
         </el-form-item>
 
         <el-form-item label="商品图片" prop="imageUrls">
-          <el-upload
-            action="/upload"
-            list-type="picture-card"
-            :auto-upload="true"
-            :on-success="handleUploadSuccess"
-            :on-error="handleUploadError"
-            :file-list="fileList"
-            multiple
-            :limit="9"
-          >
-            <i class="el-icon-plus"></i>
-          </el-upload>
+          <image-upload v-model="form.imageUrls" :limit="9" />
           <div class="upload-tip">最多上传9张图片，首张图为商品列表展示图</div>
         </el-form-item>
 
