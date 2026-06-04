@@ -184,6 +184,61 @@ export const dynamicRoutes = [
       }
     ]
   },
+  {
+    path: '/market',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/campus/market/index'),
+        name: 'Market',
+        meta: { title: '二手商城', icon: 'el-icon-shopping-bag-1' }
+      },
+      {
+        path: 'detail',
+        component: () => import('@/views/campus/market/detail'),
+        name: 'MarketDetail',
+        meta: { title: '商品详情', activeMenu: '/market/index' }
+      },
+      {
+        path: 'add',
+        component: () => import('@/views/campus/market/add'),
+        name: 'AddProduct',
+        meta: { title: '发布商品', activeMenu: '/market/index' }
+      },
+      {
+        path: 'edit',
+        component: () => import('@/views/campus/market/edit'),
+        name: 'EditProduct',
+        meta: { title: '编辑商品', activeMenu: '/market/index' }
+      },
+      {
+        path: 'my-products',
+        component: () => import('@/views/campus/market/my-products'),
+        name: 'MyProducts',
+        meta: { title: '我的商品', activeMenu: '/market/index' }
+      }
+    ]
+  },
+  {
+    path: '/order',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/campus/order/index'),
+        name: 'Order',
+        meta: { title: '我的订单', icon: 'el-icon-document-copy' }
+      },
+      {
+        path: 'detail',
+        component: () => import('@/views/campus/order/detail'),
+        name: 'OrderDetail',
+        meta: { title: '订单详情', activeMenu: '/order/index' }
+      }
+    ]
+  },
+
   // --- 【新增结束】 ---
 
   // --- 【“智能助手”路由已移到此处】 ---
