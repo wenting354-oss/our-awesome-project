@@ -279,7 +279,27 @@ public class SysUserServiceImpl implements ISysUserService
     @Override
     public boolean registerUser(SysUser user)
     {
-        return userMapper.insertUser(user) > 0;
+
+//        return userMapper.insertUser(user) > 0;
+        // 1. 先把用户插入 sys_user 表
+        boolean result = userMapper.insertUser(user) > 0;
+
+        // 2. ✅ 如果用户注册成功，立刻自动给他绑定一个默认角色（比如：普通学生）
+        if (result) {
+            // 注意：如果在文件顶部没有引入 SysUserRole，需要 import com.ruoyi.system.domain.SysUserRole;
+            com.ruoyi.system.domain.SysUserRole ur = new com.ruoyi.system.domain.SysUserRole();
+            ur.setUserId(user.getUserId());
+
+            // ⚠️ 极其重要：把这里的 2L 换成你刚才在后台查到的“普通学生”的角色ID数字！！！
+            ur.setRoleId(2L);
+
+            java.util.List<com.ruoyi.system.domain.SysUserRole> list = new java.util.ArrayList<>();
+            list.add(ur);
+
+            // 调用底层的 userRoleMapper 把对应关系插入到 sys_user_role 关联表里
+            userRoleMapper.batchUserRole(list);
+        }
+        return result;
     }
 
     /**

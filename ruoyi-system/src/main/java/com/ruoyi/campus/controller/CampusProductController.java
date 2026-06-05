@@ -2,6 +2,8 @@ package com.ruoyi.campus.controller;
 
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import com.ruoyi.campus.service.CampusRecommendService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +34,9 @@ import com.ruoyi.common.core.page.TableDataInfo;
 public class CampusProductController extends BaseController {
     @Autowired
     private ICampusProductService campusProductService;
+
+    @Autowired
+    private CampusRecommendService recommendService;
 
     /**
      * 查询校园二手商品列表
@@ -140,6 +145,25 @@ public class CampusProductController extends BaseController {
     public TableDataInfo myFavorites() {
         startPage();
         List<CampusProduct> list = campusProductService.selectMyFavoriteProducts(getUserId());
+        return getDataTable(list);
+    }
+
+    /**
+     * 智能算法API 1：记录用户浏览、收藏等行为 (前端静默调用)
+     */
+    @PostMapping("/recordBehavior")
+    public AjaxResult recordBehavior(Long productId, Integer behaviorType) {
+        recommendService.recordBehavior(productId, behaviorType);
+        return AjaxResult.success();
+    }
+
+    /**
+     * 智能算法API 2：获取“猜你喜欢”推荐列表
+     */
+    @GetMapping("/recommendList")
+    public TableDataInfo getRecommendList() {
+        // 推荐前 8 个商品
+        List<CampusProduct> list = recommendService.getRecommendProducts(8);
         return getDataTable(list);
     }
 }

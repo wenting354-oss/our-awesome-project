@@ -36,7 +36,8 @@ public class CampusErrandOrderController extends BaseController {
     /**
      * 查询跑腿订单列表
      */
-    @PreAuthorize("@ss.hasPermi('campus:errand:list')")
+    // ✅ 【修改】注释掉权限拦截，让所有登录学生都能看到跑腿大厅
+    // @PreAuthorize("@ss.hasPermi('campus:errand:list')")
     @GetMapping("/list")
     public TableDataInfo list(CampusErrandOrder campusErrandOrder) {
         startPage();
@@ -47,7 +48,8 @@ public class CampusErrandOrderController extends BaseController {
     /**
      * 导出跑腿订单列表
      */
-    @PreAuthorize("@ss.hasPermi('campus:errand:export')")
+    // 导出功能一般只有管理员用，这个可以保留拦截，或者也注释掉
+    // @PreAuthorize("@ss.hasPermi('campus:errand:export')")
     @Log(title = "跑腿订单", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, CampusErrandOrder campusErrandOrder) {
@@ -59,7 +61,8 @@ public class CampusErrandOrderController extends BaseController {
     /**
      * 获取跑腿订单详细信息
      */
-    @PreAuthorize("@ss.hasPermi('campus:errand:query')")
+    // ✅ 【修改】注释掉权限拦截，让大家都能看详情
+    // @PreAuthorize("@ss.hasPermi('campus:errand:query')")
     @GetMapping(value = "/{orderId}")
     public AjaxResult getInfo(@PathVariable("orderId") Long orderId) {
         return success(campusErrandOrderService.selectCampusErrandOrderByOrderId(orderId));
@@ -68,13 +71,14 @@ public class CampusErrandOrderController extends BaseController {
     /**
      * 新增跑腿订单
      */
-    @PreAuthorize("@ss.hasPermi('campus:errand:add')") //
+    // ✅ 【修改】注释掉权限拦截，让大家都能发跑腿
+    // @PreAuthorize("@ss.hasPermi('campus:errand:add')")
     @Log(title = "跑腿订单", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody CampusErrandOrder campusErrandOrder) {
-        // 【修复】 在保存前，设置发布人ID为当前登录用户的ID
+        // 在保存前，设置发布人ID为当前登录用户的ID
         campusErrandOrder.setPublisherId(getUserId());
-        // 【修复】 同时设置创建者为当前用户名
+        // 同时设置创建者为当前用户名
         campusErrandOrder.setCreateBy(getUsername());
         return toAjax(campusErrandOrderService.insertCampusErrandOrder(campusErrandOrder));
     }
@@ -82,11 +86,12 @@ public class CampusErrandOrderController extends BaseController {
     /**
      * 修改跑腿订单
      */
-    @PreAuthorize("@ss.hasPermi('campus:errand:edit')")
+    // ✅ 【修改】注释掉权限拦截
+    // @PreAuthorize("@ss.hasPermi('campus:errand:edit')")
     @Log(title = "跑腿订单", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody CampusErrandOrder campusErrandOrder) {
-        // 【修复】 设置更新者为当前用户名
+        // 设置更新者为当前用户名
         campusErrandOrder.setUpdateBy(getUsername());
         return toAjax(campusErrandOrderService.updateCampusErrandOrder(campusErrandOrder));
     }
@@ -94,7 +99,8 @@ public class CampusErrandOrderController extends BaseController {
     /**
      * 删除跑腿订单
      */
-    @PreAuthorize("@ss.hasPermi('campus:errand:remove')")
+    // ✅ 【修改】注释掉权限拦截
+    // @PreAuthorize("@ss.hasPermi('campus:errand:remove')")
     @Log(title = "跑腿订单", businessType = BusinessType.DELETE)
     @DeleteMapping("/{orderIds}")
     public AjaxResult remove(@PathVariable Long[] orderIds) {
@@ -102,8 +108,9 @@ public class CampusErrandOrderController extends BaseController {
     }
 
     /**
-     * 【新增】接单接口
+     * 接单接口
      */
+    // (这个是你自己新增的方法，本来就没加权限拦截，保持原样即可)
     @Log(title = "跑腿订单", businessType = BusinessType.UPDATE)
     @PutMapping("/take/{orderId}")
     public AjaxResult takeOrder(@PathVariable Long orderId) {
@@ -111,24 +118,22 @@ public class CampusErrandOrderController extends BaseController {
     }
 
     /**
-     * 【新增】获取我发布的跑腿订单列表
+     * 获取我发布的跑腿订单列表
      */
     @GetMapping("/my-published")
     public TableDataInfo myPublishedList(CampusErrandOrder campusErrandOrder) {
         startPage();
-        // 关键：设置查询条件为当前用户ID
         campusErrandOrder.setPublisherId(getUserId());
         List<CampusErrandOrder> list = campusErrandOrderService.selectMyPublishedErrandOrderList(campusErrandOrder);
         return getDataTable(list);
     }
 
     /**
-     * 【新增】获取我接受的跑腿订单列表
+     * 获取我接受的跑腿订单列表
      */
     @GetMapping("/my-taken")
     public TableDataInfo myTakenList(CampusErrandOrder campusErrandOrder) {
         startPage();
-        // 关键：设置查询条件为当前用户ID
         campusErrandOrder.setTakerId(getUserId());
         List<CampusErrandOrder> list = campusErrandOrderService.selectMyTakenErrandOrderList(campusErrandOrder);
         return getDataTable(list);

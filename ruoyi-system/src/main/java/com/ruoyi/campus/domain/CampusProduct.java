@@ -8,8 +8,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
  * 校园二手商品对象 campus_product
- * 
- * @author ruoyi
+ * * @author ruoyi
  * @date 2025-11-11
  */
 public class CampusProduct extends BaseEntity {
@@ -67,6 +66,18 @@ public class CampusProduct extends BaseEntity {
 
     /** 当前登录用户是否已收藏 */
     private boolean favorited;
+
+    // ================== ✅ 新增：关联查询的学生信息 开始 ==================
+    /** 卖家账号 (用于前端判断是否为 admin，或者直接展示为学号) */
+    private String userName;
+
+    /** 卖家所属学院 */
+    private String college;
+
+    /** 卖家主修专业 */
+    private String major;
+    // ================== ✅ 新增：关联查询的学生信息 结束 ==================
+
 
     public void setProductId(Long productId) {
         this.productId = productId;
@@ -180,6 +191,31 @@ public class CampusProduct extends BaseEntity {
         this.favorited = favorited;
     }
 
+    // ================== ✅ 新增字段的 Get / Set ==================
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getCollege() {
+        return college;
+    }
+
+    public void setCollege(String college) {
+        this.college = college;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public void setMajor(String major) {
+        this.major = major;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
@@ -199,6 +235,10 @@ public class CampusProduct extends BaseEntity {
                 .append("updateBy", getUpdateBy())
                 .append("updateTime", getUpdateTime())
                 .append("remark", getRemark())
+                .append("nickName", getNickName())
+                .append("userName", getUserName())
+                .append("college", getCollege())
+                .append("major", getMajor())
                 .toString();
     }
 }

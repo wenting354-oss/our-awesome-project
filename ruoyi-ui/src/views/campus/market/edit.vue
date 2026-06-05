@@ -43,18 +43,7 @@
         </el-form-item>
 
         <el-form-item label="商品图片" prop="imageUrls">
-          <el-upload
-            action="/upload"
-            list-type="picture-card"
-            :auto-upload="true"
-            :on-success="handleUploadSuccess"
-            :on-error="handleUploadError"
-            :file-list="fileList"
-            multiple
-            :limit="9"
-          >
-            <i class="el-icon-plus"></i>
-          </el-upload>
+          <image-upload v-model="form.imageUrls" :limit="9" />
           <div class="upload-tip">最多上传9张图片，首张图为商品列表展示图</div>
         </el-form-item>
 
@@ -69,21 +58,13 @@
           />
         </el-form-item>
 
-        <el-form-item label="联系电话" prop="sellerPhone">
-          <el-input v-model="form.sellerPhone" placeholder="请输入您的联系电话（可选）" />
-        </el-form-item>
-
-        <el-form-item label="微信号" prop="sellerWeChat">
-          <el-input v-model="form.sellerWeChat" placeholder="请输入您的微信号（可选）" />
-        </el-form-item>
-
-        <el-form-item label="QQ号" prop="sellerQQ">
-          <el-input v-model="form.sellerQQ" placeholder="请输入您的QQ号（可选）" />
+        <el-form-item label="联系电话" prop="contactInfo">
+          <el-input v-model="form.contactInfo" placeholder="请输入您的联系电话，方便买家联系您" />
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="submitForm" :loading="submitLoading">保存更改</el-button>
-          <el-button @click="$router.go(-1)">取消</el-button>
+          <el-button @click="handleClose">取消</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -99,7 +80,6 @@ export default {
     return {
       loading: false,
       submitLoading: false,
-      fileList: [],
       form: {
         productId: '',
         title: '',
@@ -108,17 +88,24 @@ export default {
         condition: '',
         imageUrls: '',
         description: '',
-        sellerPhone: '',
-        sellerWeChat: '',
-        sellerQQ: ''
+        contactInfo: '' // ✅ 核心修改 3：清理多余字段，对齐后端
       },
       rules: {
         title: [{ required: true, message: '商品标题不能为空', trigger: 'blur' }],
         category: [{ required: true, message: '商品分类不能为空', trigger: 'change' }],
         price: [{ required: true, message: '商品价格不能为空', trigger: 'blur' }],
-        condition: [{ required: true, message: '新旧程度不能为空', trigger: 'change' }],
         description: [{ required: true, message: '商品描述不能为空', trigger: 'blur' }]
       }
+    }
+  },
+  watch: {
+    '$route.query.id': {
+      handler(newId) {
+        if (newId) {
+          this.getDetail()
+        }
+      },
+      immediate: true // 加上这个，页面刚一打开就会立刻执行一次
     }
   },
   created() {
@@ -144,19 +131,7 @@ export default {
           this.loading = false
         })
     },
-    handleUploadSuccess(response, file) {
-      if (response.code === 0) {
-        const urls = this.form.imageUrls ? this.form.imageUrls.split(',') : []
-        urls.push(response.fileName)
-        this.form.imageUrls = urls.join(',')
-        this.$message.success('图片上传成功')
-      } else {
-        this.$message.error(response.msg || '图片上传失败')
-      }
-    },
-    handleUploadError() {
-      this.$message.error('图片上传失败，请重试')
-    },
+    // ✅ 核心修改 4：删除了旧的 handleUploadSuccess 和 handleUploadError 方法
     submitForm() {
       this.$refs.form.validate(valid => {
         if (valid) {
@@ -169,13 +144,22 @@ export default {
           updateProduct(this.form)
             .then(() => {
               this.$message.success('商品更新成功')
-              this.$router.push({ name: 'MyProducts' })
+              // 修改成功后返回上一页
+              this.$store.dispatch("tagsView/delView", this.$route).then(() => {
+                this.$router.push({ path: '/market-page/my-products' })
+              })
             })
             .catch(() => {
               this.$message.error('商品更新失败，请重试')
               this.submitLoading = false
             })
         }
+      })
+    },
+    handleClose() {
+      // 同样关闭页签，并后退
+      this.$store.dispatch("tagsView/delView", this.$route).then(() => {
+        this.$router.go(-1)
       })
     }
   }

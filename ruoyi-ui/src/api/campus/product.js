@@ -42,3 +42,20 @@ export function delProduct(productId) {
     method: 'delete'
   })
 }
+
+// 记录用户行为偏好（埋点）
+export function recordUserBehavior(productId, behaviorType) {
+  return request({
+    url: '/campus/product/recordBehavior',
+    method: 'post',
+    params: { productId, behaviorType }
+  })
+}
+
+// 获取猜你喜欢推荐列表
+export function getRecommendProducts() {
+  return request({
+    url: '/campus/product/recommendList',
+    method: 'get'
+  })
+}

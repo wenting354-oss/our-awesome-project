@@ -1,7 +1,6 @@
 <template>
   <div class="my-products-container">
     <el-card class="box-card">
-      <!-- 统计信息 -->
       <el-row :gutter="20" class="stats-row">
         <el-col :xs="24" :sm="6">
           <div class="stat-item">
@@ -10,19 +9,19 @@
           </div>
         </el-col>
         <el-col :xs="24" :sm="6">
-          <div class="stat-item active">
+          <div class="stat-item">
             <div class="stat-value">{{ stats.onSale }}</div>
             <div class="stat-label">在售</div>
           </div>
         </el-col>
         <el-col :xs="24" :sm="6">
-          <div class="stat-item">
+          <div class="stat-item" style="border-color: #ff4d4f;">
             <div class="stat-value">{{ stats.sold }}</div>
             <div class="stat-label">已售</div>
           </div>
         </el-col>
         <el-col :xs="24" :sm="6">
-          <div class="stat-item">
+          <div class="stat-item" style="border-color: #909399;">
             <div class="stat-value">{{ stats.offline }}</div>
             <div class="stat-label">下架</div>
           </div>
@@ -31,14 +30,33 @@
 
       <el-divider></el-divider>
 
-      <!-- 筛选和操作 -->
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="filter-form">
+        <el-form-item prop="category">
+          <el-select v-model="queryParams.category" placeholder="按分类筛选" clearable @change="handleQuery">
+            <el-option label="全部种类" value="" />
+            <el-option label="电子产品" value="1" />
+            <el-option label="图书教材" value="2" />
+            <el-option label="生活用品" value="3" />
+            <el-option label="服装配饰" value="4" />
+            <el-option label="其他" value="5" />
+          </el-select>
+        </el-form-item>
+
         <el-form-item prop="status">
           <el-select v-model="queryParams.status" placeholder="按状态筛选" clearable @change="handleQuery">
-            <el-option label="全部" value="" />
+            <el-option label="商品状态" value="" />
             <el-option label="在售" value="0" />
             <el-option label="已售" value="1" />
             <el-option label="下架" value="2" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item prop="sortBy">
+          <el-select v-model="queryParams.sortBy" placeholder="排序方式" clearable @change="handleQuery">
+            <el-option label="最新发布" value="createTimeDesc" />
+            <el-option label="ID 由低到高" value="idAsc" />
+            <el-option label="价格由低到高" value="priceAsc" />
+            <el-option label="价格由高到低" value="priceDesc" />
           </el-select>
         </el-form-item>
 
@@ -50,9 +68,13 @@
 
       <el-divider></el-divider>
 
-      <!-- 商品表格 -->
       <el-table :data="productList" stripe v-loading="loading">
-        <el-table-column prop="productId" label="ID" width="80" />
+        <el-table-column label="ID" width="80">
+          <template slot-scope="scope">
+            {{ scope.row.productId || scope.row.id }}
+          </template>
+        </el-table-column>
+
         <el-table-column label="商品" min-width="250">
           <template slot-scope="scope">
             <div class="product-cell">
@@ -66,6 +88,12 @@
                 <div class="product-desc">{{ scope.row.description | truncate(30) }}</div>
               </div>
             </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="分类" width="100">
+          <template slot-scope="scope">
+            {{ getCategoryLabel(scope.row.category) }}
           </template>
         </el-table-column>
 
@@ -95,7 +123,7 @@
               size="mini"
               type="text"
               icon="el-icon-view"
-              @click="goToDetail(scope.row.productId)"
+              @click="goToDetail(scope.row.productId || scope.row.id)"
             >
               查看
             </el-button>
@@ -103,7 +131,7 @@
               size="mini"
               type="text"
               icon="el-icon-edit"
-              @click="handleEdit(scope.row.productId)"
+              @click="handleEdit(scope.row.productId || scope.row.id)"
               v-if="scope.row.status === '0'"
             >
               编辑
@@ -112,20 +140,20 @@
               size="mini"
               type="text"
               icon="el-icon-delete"
-              @click="handleDelete(scope.row.productId)"
+              @click="handleDelete(scope.row.productId || scope.row.id)"
             >
               删除
             </el-button>
-            <el-dropdown trigger="click" v-if="scope.row.status === '0'">
+            <el-dropdown trigger="click" v-if="scope.row.status === '0'" style="margin-left: 10px;">
               <el-button size="mini" type="text">
                 更多<i class="el-icon-arrow-down el-icon--right"></i>
               </el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item @click.native="handleOffline(scope.row.productId)">
+                <el-dropdown-item @click.native="handleOffline(scope.row)">
                   下架
                 </el-dropdown-item>
-                <el-dropdown-item @click.native="handleRefresh(scope.row.productId)">
-                  刷新
+                <el-dropdown-item @click.native="handleSold(scope.row)">
+                  标为已售
                 </el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
@@ -133,7 +161,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <pagination
         v-show="total > 0"
         :total="total"
@@ -146,7 +173,8 @@
 </template>
 
 <script>
-import { listProduct, delProduct } from '@/api/campus/product'
+// ✅ 引入了 updateProduct 来实现真正的状态更新（下架/已售）
+import { listProduct, delProduct, updateProduct } from '@/api/campus/product'
 
 export default {
   name: 'MyProducts',
@@ -166,7 +194,12 @@ export default {
         pageNum: 1,
         pageSize: 10,
         status: '',
+        category: '', // 新增分类筛选参数
+        sortBy: 'createTimeDesc', // 新增排序参数
         userId: this.$store.state.user.id
+      },
+      categoryMap: {
+        '1': '电子产品', '2': '图书教材', '3': '生活用品', '4': '服装配饰', '5': '其他'
       },
       stats: {
         total: 0,
@@ -182,12 +215,30 @@ export default {
   methods: {
     getList() {
       this.loading = true
-      listProduct(this.queryParams)
+
+      // ✅ 处理排序逻辑
+      const query = { ...this.queryParams }
+      if (query.sortBy === 'idAsc') {
+        query.orderByColumn = 'product_id' // 假设你的数据库主键叫 product_id，如果是 id 请改成 id
+        query.isAsc = 'asc'
+      } else if (query.sortBy === 'priceAsc') {
+        query.orderByColumn = 'price'
+        query.isAsc = 'asc'
+      } else if (query.sortBy === 'priceDesc') {
+        query.orderByColumn = 'price'
+        query.isAsc = 'desc'
+      } else {
+        query.orderByColumn = 'create_time'
+        query.isAsc = 'desc'
+      }
+      delete query.sortBy
+
+      listProduct(query)
         .then(response => {
           this.productList = response.rows || []
           this.total = response.total || 0
 
-          // 计算统计信息
+          // 计算本页统计信息
           this.stats = {
             total: response.total || 0,
             onSale: this.productList.filter(p => p.status === '0').length,
@@ -206,20 +257,18 @@ export default {
       this.queryParams.pageNum = 1
       this.getList()
     },
+    getCategoryLabel(categoryId) {
+      return this.categoryMap[categoryId] || '其他'
+    },
+    // ✅ 修复了路由跳转白屏的问题，统一使用 -page 绝对路径
     goToDetail(productId) {
-      this.$router.push({
-        name: 'MarketDetail',
-        query: { id: productId }
-      })
+      this.$router.push({ path: '/market-page/detail', query: { id: productId } })
     },
     handleAdd() {
-      this.$router.push({ name: 'AddProduct' })
+      this.$router.push({ path: '/market-page/add' })
     },
     handleEdit(productId) {
-      this.$router.push({
-        name: 'EditProduct',
-        query: { id: productId }
-      })
+      this.$router.push({ path: '/market-page/edit', query: { id: productId } })
     },
     handleDelete(productId) {
       this.$modal.confirm('是否确认删除该商品？').then(() => {
@@ -229,17 +278,32 @@ export default {
         this.getList()
       }).catch(() => {})
     },
-    handleOffline(productId) {
-      this.$message.info('下架功能开发中')
+    // ✅ 真正实现下架功能
+    handleOffline(row) {
+      this.$modal.confirm('确认要下架商品《' + row.title + '》吗？').then(() => {
+        // 调用修改接口，把状态改成 2
+        return updateProduct({ productId: row.productId || row.id, status: '2' })
+      }).then(() => {
+        this.$message.success('已成功下架')
+        this.getList()
+      }).catch(() => {})
     },
-    handleRefresh(productId) {
-      this.$message.info('刷新功能开发中')
+    // ✅ 顺便加了个标为已售功能
+    handleSold(row) {
+      this.$modal.confirm('确认该商品已售出吗？').then(() => {
+        // 调用修改接口，把状态改成 1
+        return updateProduct({ productId: row.productId || row.id, status: '1' })
+      }).then(() => {
+        this.$message.success('恭喜，商品已售出')
+        this.getList()
+      }).catch(() => {})
     }
   }
 }
 </script>
 
 <style scoped lang="scss">
+/* 样式保留你的原版不动 */
 .my-products-container {
   padding: 20px;
 

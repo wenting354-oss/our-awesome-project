@@ -14,8 +14,7 @@ import com.ruoyi.common.xss.Xss;
 
 /**
  * 用户对象 sys_user
- * 
- * @author ruoyi
+ * * @author ruoyi
  */
 public class SysUser extends BaseEntity
 {
@@ -29,11 +28,11 @@ public class SysUser extends BaseEntity
     @Excel(name = "部门编号", type = Type.IMPORT)
     private Long deptId;
 
-    /** 用户账号 */
+    /** 用户账号 (在我们的系统中，学生默认用学号作为账号) */
     @Excel(name = "登录名称")
     private String userName;
 
-    /** 用户昵称 */
+    /** 用户昵称 (真实姓名) */
     @Excel(name = "用户名称")
     private String nickName;
 
@@ -73,10 +72,28 @@ public class SysUser extends BaseEntity
     /** 密码最后更新时间 */
     private Date pwdUpdateDate;
 
+    // ================== ✅ 新增：校园档案扩展字段 开始 ==================
+    /** 学号 */
+    @Excel(name = "学号")
+    private String studentId;
+
+    /** 所属学院 */
+    @Excel(name = "所属学院")
+    private String college;
+
+    /** 主修专业 */
+    @Excel(name = "主修专业")
+    private String major;
+
+    /** 所在班级 */
+    @Excel(name = "所在班级")
+    private String className;
+    // ================== ✅ 新增：校园档案扩展字段 结束 ==================
+
     /** 部门对象 */
     @Excels({
-        @Excel(name = "部门名称", targetAttr = "deptName", type = Type.EXPORT),
-        @Excel(name = "部门负责人", targetAttr = "leader", type = Type.EXPORT)
+            @Excel(name = "部门名称", targetAttr = "deptName", type = Type.EXPORT),
+            @Excel(name = "部门负责人", targetAttr = "leader", type = Type.EXPORT)
     })
     private SysDept dept;
 
@@ -260,6 +277,40 @@ public class SysUser extends BaseEntity
         this.pwdUpdateDate = pwdUpdateDate;
     }
 
+    // ================== ✅ 新增：校园档案的 Get 和 Set 方法 开始 ==================
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
+    }
+
+    public String getCollege() {
+        return college;
+    }
+
+    public void setCollege(String college) {
+        this.college = college;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public void setMajor(String major) {
+        this.major = major;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+    // ================== ✅ 新增：校园档案的 Get 和 Set 方法 结束 ==================
+
     public SysDept getDept()
     {
         return dept;
@@ -313,26 +364,31 @@ public class SysUser extends BaseEntity
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
-            .append("userId", getUserId())
-            .append("deptId", getDeptId())
-            .append("userName", getUserName())
-            .append("nickName", getNickName())
-            .append("email", getEmail())
-            .append("phonenumber", getPhonenumber())
-            .append("sex", getSex())
-            .append("avatar", getAvatar())
-            .append("password", getPassword())
-            .append("status", getStatus())
-            .append("delFlag", getDelFlag())
-            .append("loginIp", getLoginIp())
-            .append("loginDate", getLoginDate())
-            .append("pwdUpdateDate", getPwdUpdateDate())
-            .append("createBy", getCreateBy())
-            .append("createTime", getCreateTime())
-            .append("updateBy", getUpdateBy())
-            .append("updateTime", getUpdateTime())
-            .append("remark", getRemark())
-            .append("dept", getDept())
-            .toString();
+                .append("userId", getUserId())
+                .append("deptId", getDeptId())
+                .append("userName", getUserName())
+                .append("nickName", getNickName())
+                .append("email", getEmail())
+                .append("phonenumber", getPhonenumber())
+                .append("sex", getSex())
+                .append("avatar", getAvatar())
+                .append("password", getPassword())
+                .append("status", getStatus())
+                .append("delFlag", getDelFlag())
+                .append("loginIp", getLoginIp())
+                .append("loginDate", getLoginDate())
+                .append("pwdUpdateDate", getPwdUpdateDate())
+                // ✅ 把新字段也加入到 toString 打印中，方便以后调试看日志
+                .append("studentId", getStudentId())
+                .append("college", getCollege())
+                .append("major", getMajor())
+                .append("className", getClassName())
+                .append("createBy", getCreateBy())
+                .append("createTime", getCreateTime())
+                .append("updateBy", getUpdateBy())
+                .append("updateTime", getUpdateTime())
+                .append("remark", getRemark())
+                .append("dept", getDept())
+                .toString();
     }
 }
