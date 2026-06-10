@@ -225,6 +225,19 @@ export const dynamicRoutes = [
         meta: { title: '订单详情', activeMenu: '/order' }
       }
     ]
+  },
+  {
+    path: '/private-chat',   // 👈 修改这里，使用独立的路径
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/campus/chat/index'), // 👈 这里对应的文件物理路径不用变
+        name: 'PrivateChat',
+        meta: { title: '在线沟通', activeMenu: '/campus/market' } // activeMenu 保持左侧菜单高亮
+      }
+    ]
   }
 
   // --- 【完全删除 errand 和 assistant，因为它们没有需要隐藏的前端内页】 ---

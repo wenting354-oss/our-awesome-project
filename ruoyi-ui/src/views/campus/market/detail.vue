@@ -98,8 +98,12 @@
               </div>
 
               <div class="seller-contact-btn">
-                <el-button type="primary" round size="small" icon="el-icon-chat-dot-round" @click="handleContact">
-                  联系TA
+                <el-button plain round size="small" icon="el-icon-phone-outline" @click="handleContact">
+                  电话/微信
+                </el-button>
+
+                <el-button type="primary" round size="small" icon="el-icon-chat-dot-round" @click="handleContactSeller(product.userId)">
+                  在线私信
                 </el-button>
               </div>
             </div>
@@ -242,6 +246,17 @@ export default {
     },
     getConditionLabel(conditionId) {
       return this.conditionMap[conditionId] || '未知'
+    },
+    handleContactSeller(sellerId) {
+      if (!sellerId) {
+        this.$message.warning("获取卖家信息失败");
+        return;
+      }
+      // 👈 将 path 修改为我们刚刚配置的无冲突路由
+      this.$router.push({
+        path: '/private-chat/index',
+        query: { targetId: sellerId }
+      });
     }
   }
 }
