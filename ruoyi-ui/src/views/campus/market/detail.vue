@@ -1,7 +1,9 @@
 <template>
   <div class="detail-container">
     <el-breadcrumb separator="/" class="breadcrumb">
-      <el-breadcrumb-item :to="{ path: '/market-page/index' }">二手商城</el-breadcrumb-item>
+      <el-breadcrumb-item>
+        <a @click="goBack">二手商城</a>
+      </el-breadcrumb-item>
       <el-breadcrumb-item>商品详情</el-breadcrumb-item>
     </el-breadcrumb>
 
@@ -55,7 +57,7 @@
             <el-divider></el-divider>
 
             <div class="seller-card">
-              <el-avatar :size="64" :src="product.avatar || '/avatar.png'" class="seller-avatar"></el-avatar>
+              <el-avatar :size="64" :src="formatAvatar(product.avatar)" class="seller-avatar"></el-avatar>
 
               <div class="seller-details">
                 <template v-if="product.userName === 'admin'">
@@ -236,6 +238,22 @@ export default {
     }
   },
   methods: {
+    // 👇 新增：智能后退方法
+    goBack() {
+      // 调用若依的全局方法：关闭当前的“商品详情”标签，并平滑退回到上一个真实存在的路由（大厅）
+      this.$tab.closePage().then(() => {
+        this.$router.push({ path: '/market' });
+      });
+    },
+    formatAvatar(avatar) {
+      if (!avatar) {
+        return require('@/assets/images/profile.jpg');
+      }
+      if (avatar.startsWith('http')) {
+        return avatar;
+      }
+      return process.env.VUE_APP_BASE_API + avatar;
+    },
     initData() {
       this.getDetail()
       this.loadRecommend()
