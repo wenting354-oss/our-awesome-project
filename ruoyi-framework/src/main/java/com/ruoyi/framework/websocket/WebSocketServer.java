@@ -3,6 +3,8 @@ package com.ruoyi.framework.websocket;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.common.utils.spring.SpringUtils;
+import com.ruoyi.system.domain.CampusUserChat;
+import com.ruoyi.system.service.ICampusUserChatService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -10,18 +12,13 @@ import org.springframework.stereotype.Component;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * WebSocket 实时通讯服务
- */
 @Component
 @ServerEndpoint("/websocket/chat/{userId}")
 public class WebSocketServer {
-
     private static final Logger log = LoggerFactory.getLogger(WebSocketServer.class);
-
-    // 保存所有在线用户的 Session (Key: 用户ID, Value: Session)
     private static ConcurrentHashMap<Long, Session> sessionPool = new ConcurrentHashMap<>();
 
     @OnOpen
@@ -33,24 +30,32 @@ public class WebSocketServer {
     @OnMessage
     public void onMessage(String message, @PathParam("userId") Long userId) {
         log.info("收到来自用户 {} 的消息: {}", userId, message);
-
         try {
             JSONObject msgObj = JSON.parseObject(message);
             Long receiverId = msgObj.getLong("receiverId");
             String content = msgObj.getString("content");
 
-            // TODO: 在这里你可以通过 SpringUtils.getBean() 获取 Service，将消息保存到 campus_user_chat 数据库表中
+            // 1. 消息入库持久化（无论接收者在线与否都保存）
+            CampusUserChat chatRecord = new CampusUserChat();
+            chatRecord.setSenderId(userId);
+            chatRecord.setReceiverId(receiverId);
+            chatRecord.setContent(content);
+            chatRecord.setCreateTime(new Date());
 
-            // 实时转发给接收者（如果对方在线）
+            ICampusUserChatService chatService = SpringUtils.getBean(ICampusUserChatService.class);
+            chatService.saveChat(chatRecord);
+
+            // 2. 实时转发给接收者（若对方在线）
             Session receiverSession = sessionPool.get(receiverId);
             if (receiverSession != null && receiverSession.isOpen()) {
                 JSONObject sendObj = new JSONObject();
                 sendObj.put("senderId", userId);
                 sendObj.put("content", content);
+                sendObj.put("createTime", chatRecord.getCreateTime());
                 receiverSession.getBasicRemote().sendText(sendObj.toJSONString());
             }
         } catch (Exception e) {
-            log.error("解析或转发消息失败", e);
+            log.error("解析、保存或转发消息失败", e);
         }
     }
 

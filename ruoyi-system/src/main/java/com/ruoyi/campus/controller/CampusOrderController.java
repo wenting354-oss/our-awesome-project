@@ -4,14 +4,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
@@ -20,29 +13,23 @@ import com.ruoyi.campus.domain.CampusOrder;
 import com.ruoyi.campus.service.ICampusOrderService;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.core.page.TableDataInfo;
-
-// 【新增】导入
 import com.ruoyi.campus.domain.dto.CreateOrderDto;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.exception.ServiceException;
 
 /**
  * 校园订单Controller
- * 
- * @author ruoyi
- * @date (你的生成日期)
+ * * @author ruoyi
  */
 @RestController
 @RequestMapping("/campus/order")
 public class CampusOrderController extends BaseController {
+
     @Autowired
     private ICampusOrderService campusOrderService;
 
-    @Autowired
-    private com.ruoyi.campus.mapper.CampusOrderMapper campusOrderMapper;
-
     /**
-     * 查询校园订单列表
+     * 查询校园订单列表 (管理员后台使用)
      */
     @PreAuthorize("@ss.hasPermi('campus:order:list')")
     @GetMapping("/list")
@@ -67,14 +54,13 @@ public class CampusOrderController extends BaseController {
     /**
      * 获取校园订单详细信息
      */
-    // @PreAuthorize("@ss.hasPermi('campus:order:query')") // 【修改】允许用户查看自己的订单
     @GetMapping(value = "/{orderId}")
     public AjaxResult getInfo(@PathVariable("orderId") Long orderId) {
         return success(campusOrderService.selectCampusOrderByOrderId(orderId));
     }
 
     /**
-     * 新增校园订单
+     * 新增校园订单 (管理员后台使用)
      */
     @PreAuthorize("@ss.hasPermi('campus:order:add')")
     @Log(title = "校园订单", businessType = BusinessType.INSERT)
@@ -84,7 +70,7 @@ public class CampusOrderController extends BaseController {
     }
 
     /**
-     * 修改校园订单
+     * 修改校园订单 (管理员后台使用)
      */
     @PreAuthorize("@ss.hasPermi('campus:order:edit')")
     @Log(title = "校园订单", businessType = BusinessType.UPDATE)
@@ -94,7 +80,7 @@ public class CampusOrderController extends BaseController {
     }
 
     /**
-     * 删除校园订单
+     * 删除校园订单 (管理员后台使用)
      */
     @PreAuthorize("@ss.hasPermi('campus:order:remove')")
     @Log(title = "校园订单", businessType = BusinessType.DELETE)
@@ -103,60 +89,84 @@ public class CampusOrderController extends BaseController {
         return toAjax(campusOrderService.deleteCampusOrderByOrderIds(orderIds));
     }
 
+    // ================= 以下为【前台商城】使用的专属业务接口 =================
+
     /**
-     * 【新增】用户创建订单
-     * 这个接口是给前台用户用的，不需要权限
+     * 【下单】用户创建订单
      */
     @PostMapping("/create")
     public AjaxResult create(@RequestBody CreateOrderDto createOrderDto) {
         if (createOrderDto.getProductId() == null) {
             return AjaxResult.error("商品ID不能为空");
         }
-        // 简单的校验
         if (StringUtils.isEmpty(createOrderDto.getAddress())) {
             return AjaxResult.error("收货地址不能为空");
         }
-
         try {
             Long orderId = campusOrderService.createOrder(createOrderDto);
             return AjaxResult.success("订单创建成功", orderId);
         } catch (ServiceException e) {
-            // 捕获业务异常 (比如 "商品已售出")
             return AjaxResult.error(e.getMessage());
         } catch (Exception e) {
-            // 捕获其他未知异常
-            e.printStackTrace(); // 在后台打印详细错误
+            e.printStackTrace();
             return AjaxResult.error("创建订单失败，请联系管理员");
         }
     }
 
     /**
-     * 【新增】查询我的订单列表（买家视角）
+     * 【买家视角】查询我买到的订单
      */
-    @GetMapping("/my-orders")
-    public TableDataInfo myOrders() {
+    @GetMapping("/my")
+    public TableDataInfo listMyOrders(CampusOrder campusOrder) {
         startPage();
-        List<com.ruoyi.campus.domain.dto.OrderListDto> list = campusOrderMapper.selectMyOrdersWithProduct(getUserId());
+        // 核心隔离逻辑：强制将查询条件中的“买家ID”设为当前登录的人
+        campusOrder.setBuyerId(getUserId());
+        List<CampusOrder> list = campusOrderService.selectCampusOrderList(campusOrder);
         return getDataTable(list);
     }
 
     /**
-     * 【新增】取消订单
+     * 【卖家视角】查询我卖出的订单
      */
-    @PutMapping("/cancel/{orderId}")
+    @GetMapping("/sold")
+    public TableDataInfo listSoldOrders(CampusOrder campusOrder) {
+        startPage();
+        // 核心隔离逻辑：强制将查询条件中的“卖家ID”设为当前登录的人
+        campusOrder.setSellerId(getUserId());
+        List<CampusOrder> list = campusOrderService.selectCampusOrderList(campusOrder);
+        return getDataTable(list);
+    }
+
+    /**
+     * 【买家操作】取消订单
+     */
+    @PostMapping("/cancel/{orderId}")
     public AjaxResult cancelOrder(@PathVariable("orderId") Long orderId) {
         try {
             campusOrderService.cancelOrder(orderId, getUserId());
-            return AjaxResult.success("订单已取消");
+            return AjaxResult.success("订单已成功取消");
         } catch (ServiceException e) {
             return AjaxResult.error(e.getMessage());
         }
     }
 
     /**
-     * 【新增】确认收货
+     * 【卖家操作】发货
      */
-    @PutMapping("/confirm/{orderId}")
+    @PostMapping("/ship/{orderId}")
+    public AjaxResult shipOrder(@PathVariable("orderId") Long orderId) {
+        try {
+            campusOrderService.shipOrder(orderId, getUserId());
+            return AjaxResult.success("发货成功");
+        } catch (ServiceException e) {
+            return AjaxResult.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 【买家操作】确认收货
+     */
+    @PostMapping("/confirm/{orderId}")
     public AjaxResult confirmReceipt(@PathVariable("orderId") Long orderId) {
         try {
             campusOrderService.confirmReceipt(orderId, getUserId());
@@ -167,24 +177,15 @@ public class CampusOrderController extends BaseController {
     }
 
     /**
-     * 【新增】查询卖家收到的订单列表（卖家视角）
+     * 【买家操作】信用评分
      */
-    @GetMapping("/seller-orders")
-    public TableDataInfo sellerOrders() {
-        startPage();
-        List<com.ruoyi.campus.domain.dto.OrderListDto> list = campusOrderMapper
-                .selectSellerOrdersWithProduct(getUserId());
-        return getDataTable(list);
-    }
-
-    /**
-     * 【新增】卖家发货
-     */
-    @PutMapping("/ship/{orderId}")
-    public AjaxResult shipOrder(@PathVariable("orderId") Long orderId) {
+    @PostMapping("/rate/{orderId}")
+    public AjaxResult rateOrder(@PathVariable("orderId") Long orderId,
+                                @RequestParam("score") Integer score,
+                                @RequestParam(value = "comment", required = false) String comment) {
         try {
-            campusOrderService.shipOrder(orderId, getUserId());
-            return AjaxResult.success("发货成功");
+            campusOrderService.rateOrder(orderId, score, comment, getUserId());
+            return AjaxResult.success("评价成功，感谢您的反馈！");
         } catch (ServiceException e) {
             return AjaxResult.error(e.getMessage());
         }

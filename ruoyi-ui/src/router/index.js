@@ -96,6 +96,19 @@ export const constantRoutes = [
       }
       // --- 【新增结束】 ---
     ]
+  },
+  {
+    path: '/private-chat',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/campus/chat/index'),
+        name: 'PrivateChat',
+        meta: { title: '在线沟通', activeMenu: '/campus/market' }
+      }
+    ]
   }
 ]
 
@@ -230,6 +243,7 @@ export const dynamicRoutes = [
     path: '/private-chat',   // 👈 修改这里，使用独立的路径
     component: Layout,
     hidden: true,
+    permissions: ['campus:market:list'],
     children: [
       {
         path: 'index',

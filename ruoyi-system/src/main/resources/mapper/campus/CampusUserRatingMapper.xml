@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.campus.mapper.CampusUserRatingMapper">
+
+    <insert id="insertRating" parameterType="CampusUserRating" useGeneratedKeys="true" keyProperty="ratingId">
+        insert into campus_user_rating(order_id, buyer_id, seller_id, score, comment, create_time)
+        values(#{orderId}, #{buyerId}, #{sellerId}, #{score}, #{comment}, sysdate())
+    </insert>
+
+    <select id="checkOrderRated" resultType="int">
+        select count(1) from campus_user_rating where order_id = #{orderId}
+    </select>
+
+    <select id="calculateAverageScore" resultType="Double">
+        select IFNULL(AVG(score), 5.0) from campus_user_rating where seller_id = #{sellerId}
+    </select>
+
+</mapper>

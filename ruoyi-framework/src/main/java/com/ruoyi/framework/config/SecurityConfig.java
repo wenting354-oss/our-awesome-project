@@ -108,8 +108,8 @@ public class SecurityConfig {
                 // 注解标记允许匿名访问的url
                 .authorizeHttpRequests((requests) -> {
                     permitAllUrl.getUrls().forEach(url -> requests.antMatchers(url).permitAll());
-                    // 对于登录login 注册register 验证码captchaImage 允许匿名访问
-                    requests.antMatchers("/login", "/register", "/captchaImage", "/common/upload").permitAll()
+                    // 对于登录login 注册register 验证码captchaImage 允许匿名访问 (这里加了 /websocket/**) 👈
+                    requests.antMatchers("/login", "/register", "/captchaImage", "/common/upload", "/websocket/**").permitAll()
                             // 静态资源，可匿名访问
                             .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js",
                                     "/profile/**")
@@ -128,7 +128,6 @@ public class SecurityConfig {
                 .addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class)
                 .build();
     }
-
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();

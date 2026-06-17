@@ -92,7 +92,7 @@
                   </div>
 
                   <div class="seller-rating">
-                    学号：{{ product.userName || '保密' }} | ⭐ 信用极好
+                    学号：{{ product.userName || '保密' }} | ⭐ 信用得分: {{ product.creditScore ? product.creditScore + '分' : '5.0分' }}
                   </div>
                 </template>
               </div>
@@ -109,6 +109,10 @@
             </div>
 
             <div class="action-buttons" v-if="product.status === '0'">
+              <el-button type="danger" size="medium" icon="el-icon-shopping-cart-full" @click="handleBuy" class="buy-btn">
+                立即购买
+              </el-button>
+
               <el-button type="warning" size="medium" icon="el-icon-star-off" @click="handleCollect" :plain="!isCollected" class="collect-btn">
                 {{ isCollected ? '已加入收藏' : '加入收藏' }}
               </el-button>
@@ -148,7 +152,7 @@
 
     </el-card>
 
-    <el-dialog title="卖家联系方式" :visible.sync="contactOpen" width="380px" custom-class="contact-dialog" center>
+    <el-dialog title="卖家联系方式" :visible.sync="contactOpen" width="380px" custom-class="contact-dialog" center append-to-body>
       <div class="contact-box">
         <p><i class="el-icon-user"></i> 卖家：<strong>{{ product.userName === 'admin' ? '校方后勤' : product.nickName }}</strong></p>
         <p><i class="el-icon-chat-dot-round"></i> 联系方式：<strong>{{ product.contactInfo || '卖家未留下联系方式' }}</strong></p>
@@ -158,11 +162,37 @@
         <el-button type="primary" @click="handleCopy">一键复制</el-button>
       </span>
     </el-dialog>
+
+    <el-dialog title="确认下单" :visible.sync="buyOpen" width="500px" append-to-body>
+      <div class="buy-confirm-box">
+        <div class="product-summary">
+          <el-image :src="productImages[0] || '/404.png'" class="summary-img" fit="cover"></el-image>
+          <div class="summary-info">
+            <div class="title">{{ product.title }}</div>
+            <div class="price">￥{{ product.price }}</div>
+          </div>
+        </div>
+        <el-form ref="orderForm" :model="orderForm" :rules="orderRules" label-width="80px" style="margin-top: 25px;">
+          <el-form-item label="收货地址" prop="address">
+            <el-input v-model="orderForm.address" placeholder="请输入宿舍楼栋及房间号，如：北区1栋204" clearable />
+          </el-form-item>
+          <el-form-item label="订单备注" prop="remark">
+            <el-input type="textarea" v-model="orderForm.remark" placeholder="想对卖家说点什么...（选填）" rows="3" />
+          </el-form-item>
+        </el-form>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="buyOpen = false">取 消</el-button>
+        <el-button type="danger" @click="submitBuy" :loading="buyLoading">提交订单</el-button>
+      </span>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
 import { getProduct, recordUserBehavior, getRecommendProducts } from '@/api/campus/product'
+import { createOrder } from '@/api/campus/order' // 引入创建订单的接口
 
 export default {
   name: 'ProductDetail',
@@ -173,6 +203,20 @@ export default {
       isCollected: false,
       contactOpen: false,
       recommendList: [],
+
+      // 下单功能相关变量
+      buyOpen: false,
+      buyLoading: false,
+      orderForm: {
+        address: '',
+        remark: ''
+      },
+      orderRules: {
+        address: [
+          { required: true, message: "收货地址不能为空", trigger: "blur" }
+        ]
+      },
+
       categoryMap: {
         '1': '电子产品', '2': '图书教材', '3': '生活用品', '4': '服装配饰', '5': '其他'
       },
@@ -252,12 +296,84 @@ export default {
         this.$message.warning("获取卖家信息失败");
         return;
       }
-      // 👈 将 path 修改为我们刚刚配置的无冲突路由
       this.$router.push({
         path: '/private-chat/index',
         query: { targetId: sellerId }
       });
+    },
+
+    /** 购买逻辑 开始 **/
+    handleBuy() {
+      const currentUserId = this.$store.state.user.id;
+      // 拦截购买自己的商品
+      if (this.product.userId === currentUserId) {
+        this.$message.warning('不能购买自己发布的商品哦！');
+        return;
+      }
+
+      this.orderForm = { address: '', remark: '' };
+      this.buyOpen = true;
+      this.$nextTick(() => {
+        if (this.$refs.orderForm) {
+          this.$refs.orderForm.resetFields();
+        }
+      });
+    },
+    // submitBuy() {
+    //   this.$refs["orderForm"].validate(valid => {
+    //     if (valid) {
+    //       this.buyLoading = true;
+    //       const orderData = {
+    //         productId: this.product.id || this.product.productId,
+    //         address: this.orderForm.address,
+    //         remark: this.orderForm.remark
+    //       };
+    //
+    //       createOrder(orderData).then(res => {
+    //         // 1. 弹出下单成功提示
+    //         this.$message.success('下单成功！请等待卖家发货。');
+    //         this.buyOpen = false;
+    //         this.buyLoading = false;
+    //
+    //         // 2. 👈 核心修改：直接返回二手商城主页，避免跳转到未配置好的订单页
+    //         // this.$router.push('/market-page/index');
+    //         this.$router.push('/campus/market');
+    //       }).catch(err => {
+    //         this.buyLoading = false;
+    //       });
+    //     }
+    //   });
+    // }
+    submitBuy() {
+      this.$refs["orderForm"].validate(valid => {
+        if (valid) {
+          this.buyLoading = true;
+          const orderData = {
+            productId: this.product.id || this.product.productId,
+            address: this.orderForm.address,
+            remark: this.orderForm.remark
+          };
+
+          createOrder(orderData).then(res => {
+            this.$message.success('下单成功！请等待卖家发货。');
+            this.buyOpen = false;
+            this.buyLoading = false;
+
+            // 👇 终极方案：使用若依的 $tab 插件关闭当前页，并通知大厅刷新
+            this.$tab.closePage().then(() => {
+              // 延迟 100 毫秒，确保路由已经退回到大厅后，发送刷新信号
+              setTimeout(() => {
+                this.$bus.$emit('refreshMarketList');
+              }, 100);
+            });
+
+          }).catch(err => {
+            this.buyLoading = false;
+          });
+        }
+      });
     }
+    /** 购买逻辑 结束 **/
   }
 }
 </script>
@@ -265,7 +381,7 @@ export default {
 <style scoped lang="scss">
 .detail-container {
   padding: 24px;
-  background-color: #f4f6f8; /* 让卡片在底色中凸显出来 */
+  background-color: #f4f6f8;
   min-height: calc(100vh - 84px);
 
   .breadcrumb {
@@ -283,7 +399,7 @@ export default {
     margin-bottom: 40px;
 
     .image-container {
-      background: #f8f9fa; /* 图片没有填满时显示淡灰色底 */
+      background: #f8f9fa;
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid #ebeef5;
@@ -317,7 +433,7 @@ export default {
       }
 
       .price-section {
-        background: #fff0f0; /* 仿淘宝价格区背景色 */
+        background: #fff0f0;
         padding: 16px 20px;
         border-radius: 8px;
         display: flex;
@@ -364,14 +480,9 @@ export default {
             color: #303133;
             font-weight: 500;
           }
-
-          .condition-value {
-            color: #e6a23c;
-          }
         }
       }
 
-      /* ✅ 修复后的名片样式 */
       .seller-card {
         margin-top: 30px;
         display: flex;
@@ -426,8 +537,26 @@ export default {
         }
       }
 
+      /* ✅ 操作按钮区 */
       .action-buttons {
+        display: flex;
+        gap: 15px;
         margin-top: 30px;
+
+        .buy-btn {
+          width: 180px;
+          font-size: 16px;
+          border-radius: 24px;
+          background: linear-gradient(135deg, #ff7871 0%, #ff4d4f 100%);
+          border: none;
+          box-shadow: 0 4px 10px rgba(255, 77, 79, 0.2);
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 77, 79, 0.3);
+          }
+        }
+
         .collect-btn {
           width: 180px;
           font-size: 16px;
@@ -531,5 +660,46 @@ export default {
   p { margin: 10px 0; color: #606266; }
   strong { color: #303133; margin-left: 8px; }
   i { font-size: 16px; color: #409EFF; }
+}
+
+/* ✅ 购买弹窗内的商品卡片样式 */
+.buy-confirm-box {
+  .product-summary {
+    display: flex;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ebeef5;
+
+    .summary-img {
+      width: 65px;
+      height: 65px;
+      border-radius: 6px;
+      margin-right: 15px;
+    }
+
+    .summary-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      .title {
+        font-size: 14px;
+        color: #303133;
+        font-weight: 500;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+
+      .price {
+        color: #f5222d;
+        font-size: 18px;
+        font-weight: bold;
+      }
+    }
+  }
 }
 </style>

@@ -1,44 +1,61 @@
 import request from '@/utils/request'
 
-// 查询校园订单列表
-export function listOrder(query) {
+// 创建订单 (下单)
+export function createOrder(data) {
   return request({
-    url: '/campus/order/list',
-    method: 'get',
-    params: query
-  })
-}
-
-// 查询校园订单详细
-export function getOrder(orderId) {
-  return request({
-    url: '/campus/order/' + orderId,
-    method: 'get'
-  })
-}
-
-// 新增校园订单
-export function addOrder(data) {
-  return request({
-    url: '/campus/order',
+    url: '/campus/order/create',
     method: 'post',
     data: data
   })
 }
 
-// 修改校园订单
-export function updateOrder(data) {
+// 查询我买到的订单
+export function listMyOrders(query) {
   return request({
-    url: '/campus/order',
-    method: 'put',
-    data: data
+    url: '/campus/order/my',
+    method: 'get',
+    params: query
   })
 }
 
-// 删除校园订单
-export function delOrder(orderId) {
+// 查询我卖出的订单
+export function listSoldOrders(query) {
   return request({
-    url: '/campus/order/' + orderId,
-    method: 'delete'
+    url: '/campus/order/sold',
+    method: 'get',
+    params: query
+  })
+}
+
+// 卖家发货
+export function shipOrder(orderId) {
+  return request({
+    url: '/campus/order/ship/' + orderId,
+    method: 'post'
+  })
+}
+
+// 买家确认收货
+export function confirmReceipt(orderId) {
+  return request({
+    url: '/campus/order/confirm/' + orderId,
+    method: 'post'
+  })
+}
+
+// 买家取消订单
+export function cancelOrder(orderId) {
+  return request({
+    url: '/campus/order/cancel/' + orderId,
+    method: 'post'
+  })
+}
+
+// 评价订单
+export function rateOrder(orderId, data) {
+  return request({
+    url: '/campus/order/rate/' + orderId,
+    method: 'post',
+    params: data
   })
 }

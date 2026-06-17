@@ -5,9 +5,11 @@ import java.util.List;
 // 【新增】导入所有需要的类
 import com.ruoyi.campus.domain.CampusProduct;
 import com.ruoyi.campus.domain.CampusOrderItem;
+import com.ruoyi.campus.domain.CampusUserRating;
 import com.ruoyi.campus.domain.dto.CreateOrderDto;
 import com.ruoyi.campus.mapper.CampusProductMapper;
 import com.ruoyi.campus.mapper.CampusOrderItemMapper;
+import com.ruoyi.campus.mapper.CampusUserRatingMapper;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.DateUtils;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import com.ruoyi.campus.mapper.CampusOrderMapper;
 import com.ruoyi.campus.domain.CampusOrder;
 import com.ruoyi.campus.service.ICampusOrderService;
+import com.ruoyi.system.mapper.SysUserMapper;
 
 /**
  * 校园订单Service业务层处理
@@ -38,6 +41,11 @@ public class CampusOrderServiceImpl implements ICampusOrderService {
     @Autowired
     private CampusProductMapper campusProductMapper;
 
+    @Autowired
+    private CampusUserRatingMapper campusUserRatingMapper;
+
+    @Autowired
+    private com.ruoyi.system.mapper.SysUserMapper sysUserMapper;
     /**
      * 查询校园订单
      */
@@ -160,6 +168,8 @@ public class CampusOrderServiceImpl implements ICampusOrderService {
         return order.getOrderId();
     }
 
+
+
     /**
      * 【新增】取消订单
      */
@@ -254,5 +264,46 @@ public class CampusOrderServiceImpl implements ICampusOrderService {
         order.setStatus("2");
         order.setUpdateTime(DateUtils.getNowDate());
         campusOrderMapper.updateCampusOrder(order);
+    }
+
+    @Override
+    @Transactional
+    public void rateOrder(Long orderId, Integer score, String comment, Long buyerId) {
+        // 1. 查询订单并校验
+        CampusOrder order = campusOrderMapper.selectCampusOrderByOrderId(orderId);
+        if (order == null) {
+            throw new ServiceException("订单不存在");
+        }
+        if (!order.getBuyerId().equals(buyerId)) {
+            throw new ServiceException("您无权评价此订单");
+        }
+        if (!"3".equals(order.getStatus())) {
+            throw new ServiceException("只有已完成(已收货)的订单才能进行评价");
+        }
+
+        // 2. 检查是否已经评价过
+        if (campusUserRatingMapper.checkOrderRated(orderId) > 0) {
+            throw new ServiceException("该订单已经评价过了");
+        }
+
+        // 3. 校验分数合法性
+        if (score < 1 || score > 5) {
+            throw new ServiceException("评分必须在1到5分之间");
+        }
+
+        // 4. 保存评价记录
+        CampusUserRating rating = new CampusUserRating();
+        rating.setOrderId(orderId);
+        rating.setBuyerId(buyerId);
+        rating.setSellerId(order.getSellerId());
+        rating.setScore(score);
+        rating.setComment(comment);
+        campusUserRatingMapper.insertRating(rating);
+
+        // 5. 重新计算该卖家的平均信用分并更新到 sys_user 表
+        Double avgScore = campusUserRatingMapper.calculateAverageScore(order.getSellerId());
+        // 假设 SysUser 实体中你已经加了 creditScore 字段
+        // sysUserMapper.updateUserCreditScore(order.getSellerId(), avgScore);
+        // （此处需要你在 SysUserMapper 中自行加一个极其简单的 update 语句）
     }
 }

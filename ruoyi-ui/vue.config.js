@@ -38,6 +38,13 @@ module.exports = {
       '/profile': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/dashscope-api': {
+        target: 'https://dashscope.aliyuncs.com',
+        changeOrigin: true, // 开启代理允许跨域
+        pathRewrite: {
+          '^/dashscope-api': '' // 请求发出去前，把 '/dashscope-api' 这个假前缀抹掉
+        }
       }
     },
     disableHostCheck: true

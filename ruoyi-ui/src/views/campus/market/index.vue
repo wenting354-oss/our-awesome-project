@@ -192,6 +192,12 @@ export default {
   },
   created() {
     this.getList()
+    this.$bus.$on('refreshMarketList', () => {
+      this.getList(); // 收到信号后，立刻重新向后端请求最新数据
+    });
+  },
+  beforeDestroy() {
+    this.$bus.$off('refreshMarketList');
   },
   methods: {
     getList() {

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.CampusUserChatMapper">
+
+    <insert id="insertChat" parameterType="com.ruoyi.system.domain.CampusUserChat" useGeneratedKeys="true" keyProperty="chatId">
+        insert into campus_user_chat(sender_id, receiver_id, content, is_read, create_time)
+        values(#{senderId}, #{receiverId}, #{content}, '0', #{createTime})
+    </insert>
+
+    <select id="selectChatHistory" resultType="com.ruoyi.system.domain.CampusUserChat">
+        select chat_id, sender_id, receiver_id, content, is_read, create_time
+        from campus_user_chat
+        where (sender_id = #{userId} and receiver_id = #{targetId})
+           or (sender_id = #{targetId} and receiver_id = #{userId})
+        order by create_time asc
+    </select>
+
+    <select id="selectChatSessions" resultType="com.ruoyi.system.domain.CampusUserChat">
+        select
+            u.user_id as receiverId,
+            u.nick_name as targetName,
+            u.avatar as targetAvatar,
+            msg.content as lastMessage,
+            msg.create_time as lastTime,
+            (select count(1) from campus_user_chat where sender_id = u.user_id and receiver_id = #{userId} and is_read = '0') as unreadCount
+        from (
+                 select
+                     case when sender_id = #{userId} then receiver_id else sender_id end as target_user_id,
+                     max(chat_id) as max_chat_id
+                 from campus_user_chat
+                 where sender_id = #{userId} or receiver_id = #{userId}
+                 group by case when sender_id = #{userId} then receiver_id else sender_id end
+             ) s
+                 join campus_user_chat msg on s.max_chat_id = msg.chat_id
+                 join sys_user u on s.target_user_id = u.user_id
+        order by msg.create_time desc
+    </select>
+
+    <update id="updateMsgRead">
+        update campus_user_chat
+        set is_read = '1'
+        where sender_id = #{targetId} and receiver_id = #{userId} and is_read = '0'
+    </update>
+
+    <select id="selectTotalUnread" resultType="int">
+        select count(1) from campus_user_chat where receiver_id = #{userId} and is_read = '0'
+    </select>
+
+</mapper>
